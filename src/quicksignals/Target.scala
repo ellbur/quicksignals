@@ -13,6 +13,26 @@ trait Target[+A] {
   def zip[B](other: Target[B]): Target[(A, B)] = tracking { (this.track, other.track) }
   
   def track(using tracking: Tracking): A = tracking.track(this)
+  
+  def foreach(f: A => Unit): Cancellable = {
+    var workingCancellable: Option[Cancellable] = None
+    def go(): Unit = {
+      val (x, canc) = rely { () =>
+        workingCancellable = None
+        { () =>
+          go()
+        }
+      }
+      workingCancellable = Some(canc)
+      f(x)
+    }
+    go()
+    new Cancellable {
+      def cancel(): Unit = {
+        workingCancellable foreach (_.cancel())
+      }
+    }
+  }
 }
 
 trait Cancellable {
@@ -38,6 +58,7 @@ trait ComputedTarget[A] extends Target[A] {
       def cancel(): Unit = {
         listeners -= listener
         if (listeners.isEmpty) {
+          current = None
           val currentListened = listened.toSeq
           listened.clear()
           currentListened foreach (_.cancel())
@@ -89,8 +110,8 @@ class ComputedMutableUpdate[A](child: Target[(A, Target[Mutator[A]])]) extends T
   private val listeners = mutable.ArrayBuffer[Listener]()
   private val listened = mutable.ArrayBuffer[Cancellable]()
   private val listenedUpdater = mutable.ArrayBuffer[Cancellable]()
-  private var current: Option[A] = None
-  private var currentUpdater: Option[Target[Mutator[A]]] = None
+  private var current: Option[(A, Target[Mutator[A]])] = None
+  private var currentMutator: Option[Mutator[A]] = None
   
   private class Listener(upset: () => () => Unit) {
     def apply(): () => Unit = {
@@ -106,6 +127,9 @@ class ComputedMutableUpdate[A](child: Target[(A, Target[Mutator[A]])]) extends T
       def cancel(): Unit = {
         listeners -= listener
         if (listeners.isEmpty) {
+          current = None
+          currentMutator = None
+          
           val currentListened = listened.toSeq
           val currentListenedUpdater = listenedUpdater.toSeq
           
@@ -119,15 +143,26 @@ class ComputedMutableUpdate[A](child: Target[(A, Target[Mutator[A]])]) extends T
     }
     
     current match {
-      case Some(existing) => (existing, cancellable)
+      case Some((primary, updater)) =>
+        currentMutator match {
+          case Some(mutator) =>
+            mutator.mutate(primary)
+            (primary, cancellable)
+          
+          case None =>
+            val mutator = relyOnUpdater(updater)
+            currentMutator = Some(mutator)
+            mutator.mutate(primary)
+            (primary, cancellable)
+        }
+        
       case None =>
         val (primary, updater) = relyOn(child)
-        current = Some(primary)
-        currentUpdater = Some(updater)
+        current = Some((primary, updater))
         
         val mutator = relyOnUpdater(updater)
+        currentMutator = Some(mutator)
         mutator.mutate(primary)
-        
         (primary, cancellable)
     }
   }
@@ -157,13 +192,16 @@ class ComputedMutableUpdate[A](child: Target[(A, Target[Mutator[A]])]) extends T
   }
   
   protected def upsetUpdater(): () => Unit = {
+    currentMutator = None
+    
     val currentListenedUpdater = listenedUpdater.toSeq
     listenedUpdater.clear()
     currentListenedUpdater foreach (_.cancel())
     
     () => {
-      current zip currentUpdater foreach { case (primary, updater) =>
+      current foreach { case (primary, updater) =>
         val mutator = relyOnUpdater(updater)
+        currentMutator = Some(mutator)
         mutator.mutate(primary)
       }
     }

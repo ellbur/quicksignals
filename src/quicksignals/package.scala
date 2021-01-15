@@ -1,5 +1,5 @@
 
 package object quicksignals {
-  export signals.TrackingUtils.tracking
+  export quicksignals.TrackingUtils.tracking
 }
 
