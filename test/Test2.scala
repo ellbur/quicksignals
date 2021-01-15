@@ -14,15 +14,19 @@ object Test2 extends App {
     }
     
     val s = Source[MutableType](MutableType(0))
-    val r = Source[Mutator[MutableType]](_.setX(1))
+    val r = Source[MutableType => Unit](_.setX(1))
     
-    val a = ComputedMutableUpdate[MutableType](tracking {
-      println("(calc primary)")
-      (s.track, r map { r =>
-        println("(calc updater)")
-        r
-      })
-    })
+    val sp = tracking {
+      println("(calc s)")
+      s.track
+    }
+    
+    val rp = tracking {
+      println("(calc r)")
+      r.track
+    }
+    
+    val a = sp setting rp.track
     
     val cancelForeach = a foreach println
     
