@@ -75,7 +75,7 @@ class ComputedMutableUpdate[A](child: Target[(A, Target[Mutator[A]])]) extends T
     }
   }
   
-  protected def upset(): () => Unit = {
+  private def upset(): () => Unit = {
     current = None
     
     val currentListened = listened.toSeq
@@ -93,13 +93,13 @@ class ComputedMutableUpdate[A](child: Target[(A, Target[Mutator[A]])]) extends T
     }
   }
   
-  protected def relyOn[B](s: Target[B]): B = {
+  private def relyOn[B](s: Target[B]): B = {
     val (b, c) = s.rely(upset)
     listened += c
     b
   }
   
-  protected def upsetUpdater(): () => Unit = {
+  private def upsetUpdater(): () => Unit = {
     currentMutator = None
     
     val currentListenedUpdater = listenedUpdater.toSeq
@@ -115,7 +115,7 @@ class ComputedMutableUpdate[A](child: Target[(A, Target[Mutator[A]])]) extends T
     }
   }
   
-  protected def relyOnUpdater[B](s: Target[B]): B = {
+  private def relyOnUpdater[B](s: Target[B]): B = {
     val (b, c) = s.rely(upsetUpdater)
     listenedUpdater += c
     b
