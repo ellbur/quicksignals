@@ -6,5 +6,6 @@ package object quicksignals {
   export quicksignals.monadops.{map, flatMap, zip}
   export quicksignals.source.Source
   export quicksignals.computedmutableupdate.setting
+  export quicksignals.nowimpl.now
 }
 
