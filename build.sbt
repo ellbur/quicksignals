@@ -12,7 +12,7 @@ lazy val cross = crossProject(JSPlatform, JVMPlatform).in(file(".")).
   settings(
     organization := "com.github.ellbur",
     name := "quicksignals",
-    version := "0.1.2",
+    version := "0.1.3",
     scalaVersion := "3.0.0-M3",
     scalaSource in Test := baseDirectory.value / "../test",
     scalaSource in Compile := baseDirectory.value / "../src",
