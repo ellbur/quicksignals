@@ -1,6 +1,5 @@
 
 import quicksignals._
-import quicksignals.tracking2impl.{tracking2, track2, setting}
 
 object Test5 extends App {
   {
@@ -12,8 +11,8 @@ object Test5 extends App {
     val a = Source[Int](0)
     val b = Source[Int](1)
     
-    val c = tracking2 {
-      MutableType(a.track2) setting (_.x = b.track2)
+    val c = tracking {
+      MutableType(a.track) setting (_.x = b.track)
     }
 
     c foreach (c => println(s"c = $c"))

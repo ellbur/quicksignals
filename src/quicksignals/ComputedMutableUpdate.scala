@@ -6,20 +6,13 @@ import quicksignals.target.{Target, Cancellable}
 import quicksignals.trackingimpl.{tracking, Tracking}
 import quicksignals.monadops.map
 
-extension[A](target: Target[A]) {
-  def setting(f: Tracking ?=> A => Unit): Target[A] = ComputedMutableUpdate[A](
-    target map ((_, tracking(f)))
-  )
-}
-
 type Mutator[-A] = A => Unit
 
-class ComputedMutableUpdate[A](child: Target[(A, Target[Mutator[A]])]) extends Target[A] {
+trait ComputedMutableUpdate[A] extends Target[A] {
   private val listeners = mutable.ArrayBuffer[Listener]()
   private val listened = mutable.ArrayBuffer[Cancellable]()
   private val listenedUpdater = mutable.ArrayBuffer[Cancellable]()
-  private var current: Option[(A, Target[Mutator[A]])] = None
-  private var currentMutator: Option[Mutator[A]] = None
+  private var current: Option[A] = None
   
   private class Listener(upset: () => () => Unit) {
     def apply(): () => Unit = {
@@ -36,7 +29,6 @@ class ComputedMutableUpdate[A](child: Target[(A, Target[Mutator[A]])]) extends T
         listeners -= listener
         if (listeners.isEmpty) {
           current = None
-          currentMutator = None
           
           val currentListened = listened.toSeq
           val currentListenedUpdater = listenedUpdater.toSeq
@@ -51,27 +43,11 @@ class ComputedMutableUpdate[A](child: Target[(A, Target[Mutator[A]])]) extends T
     }
     
     current match {
-      case Some((primary, updater)) =>
-        currentMutator match {
-          case Some(mutator) =>
-            mutator(primary)
-            (primary, cancellable)
-          
-          case None =>
-            val mutator = relyOnUpdater(updater)
-            currentMutator = Some(mutator)
-            mutator(primary)
-            (primary, cancellable)
-        }
-        
+      case Some(existing) => (existing, cancellable)
       case None =>
-        val (primary, updater) = relyOn(child)
-        current = Some((primary, updater))
-        
-        val mutator = relyOnUpdater(updater)
-        currentMutator = Some(mutator)
-        mutator(primary)
-        (primary, cancellable)
+        val it = compute
+        current = Some(it)
+        (it, cancellable)
     }
   }
   
@@ -79,8 +55,13 @@ class ComputedMutableUpdate[A](child: Target[(A, Target[Mutator[A]])]) extends T
     current = None
     
     val currentListened = listened.toSeq
+    val currentListenedUpdater = listenedUpdater.toSeq
+    
     listened.clear()
+    listenedUpdater.clear()
+    
     currentListened foreach (_.cancel())
+    currentListenedUpdater foreach (_.cancel())
     
     val currentListeners = listeners.toSeq
     listeners.clear()
@@ -93,32 +74,31 @@ class ComputedMutableUpdate[A](child: Target[(A, Target[Mutator[A]])]) extends T
     }
   }
   
-  private def relyOn[B](s: Target[B]): B = {
+  private def upsetUpdater(updateTarget: Target[() => Unit], cancel: => Cancellable): () => () => Unit = {
+    () => {
+      listenedUpdater -= cancel
+      () => {
+        relyOnUpdater(updateTarget)
+      }
+    }
+  }
+  
+  protected def relyOn[B](s: Target[B]): B = {
     val (b, c) = s.rely(upset)
     listened += c
     b
   }
   
-  private def upsetUpdater(): () => Unit = {
-    currentMutator = None
+  protected def relyOnUpdater(updateTarget: Target[() => Unit]): Unit = {
+    lazy val reliance = updateTarget.rely(upsetUpdater(updateTarget, cancel))
+    lazy val updater: () => Unit = reliance._1
+    lazy val cancel: Cancellable = reliance._2
     
-    val currentListenedUpdater = listenedUpdater.toSeq
-    listenedUpdater.clear()
-    currentListenedUpdater foreach (_.cancel())
+    listenedUpdater += cancel
     
-    () => {
-      current foreach { case (primary, updater) =>
-        val mutator = relyOnUpdater(updater)
-        currentMutator = Some(mutator)
-        mutator(primary)
-      }
-    }
+    updater()
   }
   
-  private def relyOnUpdater[B](s: Target[B]): B = {
-    val (b, c) = s.rely(upsetUpdater)
-    listenedUpdater += c
-    b
-  }
+  protected def compute: A
 }
 
