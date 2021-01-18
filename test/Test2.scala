@@ -1,5 +1,6 @@
 
 import quicksignals._
+import quicksignals.tracking2impl.{tracking2, track2, setting}
 
 object Test2 extends App {
   {
@@ -26,7 +27,9 @@ object Test2 extends App {
       r.track
     }
     
-    val a = sp setting rp.track
+    val a = tracking2 {
+      sp.track2 setting rp.track2
+    }
     
     val cancelForeach = a foreach println
     
