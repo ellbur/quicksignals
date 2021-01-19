@@ -56,11 +56,11 @@ Consider the following example:
 
 This is the infamous diamond dependency:
 
-![base and ext depend on name, `baseAndExt` depends on base and ext](https://d35yeutfwbbcir.cloudfront.net/hosting/2021-01-16/ybx3nb3ol1/diamong-1.png | width=400)
+<img src="https://d35yeutfwbbcir.cloudfront.net/hosting/2021-01-16/ybx3nb3ol1/diamong-1.png" alt="base and ext depend on name, `baseAndExt` depends on base and ext" width="400"/>
 
 `(None, Some(".txt"))` is an invalid state for `baseAndExt`. It can arise only if the computation for `base` happens before the computation for `ext`:
 
-![computation reaches base, then `baseAndExt`, before ext updates](https://d35yeutfwbbcir.cloudfront.net/hosting/2021-01-16/z5xpsu3p8k/diamong-2.png)
+![computation reaches base, then `baseAndExt`, before ext updates](https://d35yeutfwbbcir.cloudfront.net/hosting/2021-01-16/z5xpsu3p8k/diamong-2.png | )
 
 However, the `Target` protocol is synchronous, so the invalid value never arises. You can treat *two* signals as if they were *one* signal: changes will always be atomic. 
 
