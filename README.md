@@ -56,7 +56,7 @@ Consider the following example:
 
 This is the infamous diamond dependency:
 
-![base and ext depend on name, `baseAndExt` depends on base and ext](https://d35yeutfwbbcir.cloudfront.net/hosting/2021-01-16/ybx3nb3ol1/diamong-1.png)
+![base and ext depend on name, `baseAndExt` depends on base and ext](https://d35yeutfwbbcir.cloudfront.net/hosting/2021-01-16/ybx3nb3ol1/diamong-1.png | width=400)
 
 `(None, Some(".txt"))` is an invalid state for `baseAndExt`. It can arise only if the computation for `base` happens before the computation for `ext`:
 
