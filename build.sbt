@@ -10,9 +10,9 @@ lazy val root = project.in(file(".")).
 
 lazy val cross = crossProject(JSPlatform, JVMPlatform).in(file(".")).
   settings(
-    organization := "com.github.ellbur",
+    organization := "com.ellbur",
     name := "quicksignals",
-    version := "0.1.4",
+    version := "0.2.0",
     scalaVersion := "3.0.0-M3",
     scalaSource in Test := baseDirectory.value / "../test",
     scalaSource in Compile := baseDirectory.value / "../src",
