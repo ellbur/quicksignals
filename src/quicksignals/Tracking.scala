@@ -3,12 +3,13 @@ package quicksignals.trackingimpl
 
 import quicksignals.target.Target
 import quicksignals.computedmutableupdate.ComputedMutableUpdate
+import quicksignals.foreachimpl.foreach
 
 def tracking[A](f: Tracking ?=> A): Target[A] = new ComputedMutableUpdate[A] {
   protected def compute = {
     f(using new Tracking {
       def track[A](t: Target[A]) = relyOn(t)
-      def setting(u: Target[() => Unit]) = relyOnUpdater(u)
+      def setting(u: Target[() => Unit]) = manage(u foreach (_()))
     })
   }
 }

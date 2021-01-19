@@ -11,7 +11,6 @@ type Mutator[-A] = A => Unit
 trait ComputedMutableUpdate[A] extends Target[A] {
   private val listeners = mutable.ArrayBuffer[Listener]()
   private val listened = mutable.ArrayBuffer[Cancellable]()
-  private val listenedUpdater = mutable.ArrayBuffer[Cancellable]()
   private var current: Option[A] = None
   
   private class Listener(upset: () => () => Unit) {
@@ -31,13 +30,8 @@ trait ComputedMutableUpdate[A] extends Target[A] {
           current = None
           
           val currentListened = listened.toSeq
-          val currentListenedUpdater = listenedUpdater.toSeq
-          
           listened.clear()
-          listenedUpdater.clear()
-          
           currentListened foreach (_.cancel())
-          currentListenedUpdater foreach (_.cancel())
         }
       }
     }
@@ -55,13 +49,8 @@ trait ComputedMutableUpdate[A] extends Target[A] {
     current = None
     
     val currentListened = listened.toSeq
-    val currentListenedUpdater = listenedUpdater.toSeq
-    
     listened.clear()
-    listenedUpdater.clear()
-    
     currentListened foreach (_.cancel())
-    currentListenedUpdater foreach (_.cancel())
     
     val currentListeners = listeners.toSeq
     listeners.clear()
@@ -74,29 +63,14 @@ trait ComputedMutableUpdate[A] extends Target[A] {
     }
   }
   
-  private def upsetUpdater(updateTarget: Target[() => Unit], cancel: => Cancellable): () => () => Unit = {
-    () => {
-      listenedUpdater -= cancel
-      () => {
-        relyOnUpdater(updateTarget)
-      }
-    }
-  }
-  
   protected def relyOn[B](s: Target[B]): B = {
     val (b, c) = s.rely(upset)
-    listened += c
+    manage(c)
     b
   }
   
-  protected def relyOnUpdater(updateTarget: Target[() => Unit]): Unit = {
-    lazy val reliance = updateTarget.rely(upsetUpdater(updateTarget, cancel))
-    lazy val updater: () => Unit = reliance._1
-    lazy val cancel: Cancellable = reliance._2
-    
-    listenedUpdater += cancel
-    
-    updater()
+  protected def manage(resource: Cancellable): Unit = {
+    listened += resource
   }
   
   protected def compute: A
