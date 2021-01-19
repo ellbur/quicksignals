@@ -1,7 +1,7 @@
 
 # Introduction
 
-`quicksignals` is a proof of concept to show just how tiny a [functional-reactive programming (FRP)](https://infoscience.epfl.ch/record/148043) library can be and still be useful. 
+`quicksignals` is a proof-of-concept to show just how tiny a [functional-reactive programming (FRP)](https://infoscience.epfl.ch/record/148043) library can be and still be useful. It is currently under 200 lines of code and yet fully functional.
 
 `quicksignals` does not aim to provide any better or different functionality than the multitude of existing FRP libraries. Rather, it aims to be small enough to make it easy to understand its design.
 
