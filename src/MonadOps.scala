@@ -1,8 +1,5 @@
 
-package quicksignals.monadops
-
-import quicksignals.target.Target
-import quicksignals.trackingimpl.{tracking, track}
+package quicksignals
 
 extension[A, B](target: Target[A]) {
   def map(f: A => B): Target[B] = tracking { f(target.track) }

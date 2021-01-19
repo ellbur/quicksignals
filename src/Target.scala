@@ -1,5 +1,5 @@
 
-package quicksignals.target
+package quicksignals
 
 trait Target[+A] {
   def rely(upset: () => () => Unit): (A, Cancellable)

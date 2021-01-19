@@ -1,10 +1,9 @@
 
-package quicksignals.computedtarget
+package quicksignals
 
-import quicksignals.target.{Target, Cancellable}
-import scala.collection.mutable
+import collection.mutable
 
-trait ComputedTarget[A] extends Target[A] {
+private trait ComputedTarget[A] extends Target[A] {
   private val listeners = mutable.ArrayBuffer[Listener]()
   private val listened = mutable.ArrayBuffer[Cancellable]()
   private var current: Option[A] = None
@@ -24,6 +23,7 @@ trait ComputedTarget[A] extends Target[A] {
         listeners -= listener
         if (listeners.isEmpty) {
           current = None
+          
           val currentListened = listened.toSeq
           listened.clear()
           currentListened foreach (_.cancel())
@@ -60,8 +60,12 @@ trait ComputedTarget[A] extends Target[A] {
   
   protected def relyOn[B](s: Target[B]): B = {
     val (b, c) = s.rely(upset)
-    listened += c
+    manage(c)
     b
+  }
+  
+  protected def manage(resource: Cancellable): Unit = {
+    listened += resource
   }
   
   protected def compute: A

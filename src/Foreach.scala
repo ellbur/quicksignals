@@ -1,7 +1,5 @@
 
-package quicksignals.foreachimpl
-
-import quicksignals.target.{Target, Cancellable}
+package quicksignals
 
 extension[A](target: Target[A]) {
   def foreach(f: A => Unit): Cancellable = {

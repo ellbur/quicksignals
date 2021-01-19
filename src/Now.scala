@@ -1,6 +1,5 @@
 
-package quicksignals.nowimpl
-import quicksignals.target.Target
+package quicksignals
 
 extension[A](target: Target[A]) {
   def now: A = {

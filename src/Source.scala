@@ -1,11 +1,7 @@
 
-package quicksignals.source
+package quicksignals
 
-import quicksignals.computedtarget.ComputedTarget
-
-class Source[A](_init: => A) extends ComputedTarget[A] {
-  private var it: A = _init
-  
+class Source[A](private var it: A) extends ComputedTarget[A] {
   def update(next: A): Unit = {
     it = next
     upset()()

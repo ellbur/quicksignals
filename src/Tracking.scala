@@ -1,11 +1,7 @@
 
-package quicksignals.trackingimpl
+package quicksignals
 
-import quicksignals.target.Target
-import quicksignals.computedmutableupdate.ComputedMutableUpdate
-import quicksignals.foreachimpl.foreach
-
-def tracking[A](f: Tracking ?=> A): Target[A] = new ComputedMutableUpdate[A] {
+def tracking[A](f: Tracking ?=> A): Target[A] = new ComputedTarget[A] {
   protected def compute = {
     f(using new Tracking {
       def track[A](t: Target[A]) = relyOn(t)
@@ -15,8 +11,8 @@ def tracking[A](f: Tracking ?=> A): Target[A] = new ComputedMutableUpdate[A] {
 }
 
 trait Tracking {
-  def track[A](t: Target[A]): A
-  def setting(u: Target[() => Unit]): Unit
+  private[quicksignals] def track[A](t: Target[A]): A
+  private[quicksignals] def setting(u: Target[() => Unit]): Unit
 }
 
 extension[A](target: Target[A]) {
