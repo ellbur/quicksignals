@@ -60,7 +60,7 @@ This is the infamous diamond dependency:
 
 `(None, Some(".txt"))` is an invalid state for `baseAndExt`. It can arise only if the computation for `base` happens before the computation for `ext`:
 
-![computation reaches base, then `baseAndExt`, before ext updates](https://d35yeutfwbbcir.cloudfront.net/hosting/2021-01-16/z5xpsu3p8k/diamong-2.png | )
+<img src="https://d35yeutfwbbcir.cloudfront.net/hosting/2021-01-16/z5xpsu3p8k/diamong-2.png" alt="computation reaches base, then `baseAndExt`, before ext updates" width="400"/>
 
 However, the `Target` protocol is synchronous, so the invalid value never arises. You can treat *two* signals as if they were *one* signal: changes will always be atomic. 
 
@@ -84,7 +84,7 @@ An "active" FRP signal is a stream of changes. The "current" value of the signal
 
 The "stream of changes" model does not work for the `Target` protocol. In fact, any FRP system that avoids the diamond problem can't be modeled as a stream of changes because you can have fewer "output" changes than "input" changes:
 
-![changes at the mid-diamond become one change at the end](https://d35yeutfwbbcir.cloudfront.net/hosting/2021-01-16/dlnpr870oi/diamond-3.png)
+<img src="https://d35yeutfwbbcir.cloudfront.net/hosting/2021-01-16/dlnpr870oi/diamond-3.png" alt="changes at the mid-diamond become one change at the end" width="400"/>
 
 This creates the odd situation that a `Target` can model the current state of the signal but not the transitions between states.
 
