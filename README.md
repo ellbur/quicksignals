@@ -92,7 +92,7 @@ This creates the odd situation that a `Target` can model the current state of th
 
 ## `ComputedTarget`
 
-The real logic of the library takes place in [`ComputedTarget`](https://github.com/ellbur/quicksignals/blob/main/src/quicksignals/ComputedTarget.scala), which handles the fussy details of invoking callbacks and cancelling dependencies. There's nothing magical or enlightening about code. It turns out the rules for updating invalid values are just boring and finicky.
+The real logic of the library takes place in [`ComputedTarget`](https://github.com/ellbur/quicksignals/blob/main/src/quicksignals/ComputedTarget.scala), which handles the fussy details of invoking callbacks and cancelling dependencies. There's nothing magical or enlightening about the code. It turns out the rules for updating invalid values are just boring and finicky.
 
 But once those are written, everything can be based off of it. 
 
@@ -177,7 +177,7 @@ A common technique from FRP libraries is to use weak references and stop the `fo
 
 Still, `foreach` is a start. Next it is time to see where we can go from here. 
 
-# Sinks part 2: `setting`
+## Sinks part 2: `setting`
 
 Consider a common problem in rendering dynamic HTML: a dynamically generated element which itself contains dynamically generated content.
 
