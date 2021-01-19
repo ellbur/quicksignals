@@ -173,7 +173,125 @@ s() = 3
 
 It should be immediately obvious that this is bad, because it's setting up a resource leak. And in a language like Scala where you are not used to managing resources, it's easy to forget those few times when you have to.
 
-A common technique from FRP libraries is to use weak references and stop the `foreach` when the last consumer is garbage collected. That's OK, but it's not great. First, because objects can hang around a long time before the JVM garbage collector runs, and, second, because once you start using weak references it's easy to accidentally create additional strong references and thwart the whole system. And, of course, you can't use this strategy in JavaScript, which still, somehow, does not have weak references. 
+A common technique from FRP libraries is to use weak references and stop the `foreach` when the last consumer is garbage collected. That's OK, but not great. First, because stale objects linger before the JVM garbage collects them, and, second, because once you start using weak references, it's easy to accidentally create additional strong references that thwart the whole system. And, of course, you can't use this strategy in JavaScript, which still, somehow, does not have weak references. 
 
 Still, `foreach` is a start. Next it is time to see where we can go from here. 
+
+# Sinks part 2: `setting`
+
+Consider a common problem in rendering dynamic HTML: a dynamically generated element which itself contains dynamically generated content.
+
+As a simple example, consider a list of counters:
+
+```html
+<p><button>New Counter</button></p>
+<ul>
+<li><button>+</button> <span>10</span></li>
+<li><button>+</button> <span>5</span></li>
+<li><button>+</button> <span>8</span></li>
+</ul>
+```
+
+We could implement this in ScalaJS using something like the following (some details omitted):
+
+```Scala
+class Counter {
+  val count = Source[Int](0)
+}
+
+extension(node: Node) {
+  def setChildren(children: Seq[Node]): Unit = {
+    node.childNodes.toSeq foreach node.removeChild
+    children foreach node.appendChild
+  }
+}
+
+val counters = Source[Seq[Counter]](Seq())
+newButton.addEventListener("click", { _ =>
+  counters() = counters.now :+ Counter()
+})
+
+val children = tracking {
+  counters.track map { counter =>
+    val upButton = document.createElement("button")
+    upButton.textContent = "Up"
+    upButton.addEventListener("click", { _ =>
+      counter.count() = counter.count.now + 1
+    })
+    
+    val countField = document.createElement("span")
+    counter.count foreach { count =>
+      countField.innerText = count.toString
+    }
+    
+    val li = document.createElement("li")
+    li.appendChild(upButton)
+    li.appendChild(countField)
+    li
+  }
+}
+
+children foreach { children =>
+  list.setChildren(children)
+}
+```
+
+This works, but it has a leak: each call to `counter.count foreach { }` creates a listener that is never cancelled. The problem arises in a friction between the declarative FRP code and the imperative DOM API.
+
+As a second shot, we could eliminate the imperative parts and merge everything into one big `Target`:
+
+```Scala
+val children = tracking {
+  counters.track map { counter =>
+    val upButton = document.createElement("button")
+    upButton.textContent = "Up"
+    upButton.addEventListener("click", { _ =>
+      counter.count() = counter.count.now + 1
+    })
+    
+    val countField = document.createElement("span")
+    countField.innerText = counter.count.track.toString
+    
+    val li = document.createElement("li")
+    li.appendChild(upButton)
+    li.appendChild(countField)
+    li
+  }
+}
+```
+
+This has no leaks, but it has another disadvantage: the entire list is re-rendered every time a single counter is incremented. Aside from being inefficient, this also results in a loss of keyboard focus, which would be annoying to the user. This code is not making using of the power of the mutable DOM. 
+
+The first version was almost there; we just need a way to cancel the `foreach` when the node is no longer in the DOM.
+
+At first, this might seem an appropriate place for a [`MutationObserver`](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver), which could cancel the `foreach` when the `span` it's modifying is removed. Unfortunately, `MutationObserver` only allows observing the *descendants* of a DOM node. It does not allow observing whether the *node itself* is added or removed from the DOM.
+
+Next, it might be tempting to remedy this deficiency in `MutationObserver` by creating a type like `AddableNode` that has callbacks for when it's added or removed from the DOM. This could work, but it turns out there's a better way.
+
+The `Target` protocol already has a resource management system built in: we just need to cut off the propagation of events.
+
+For that there is `setting`, leading to the implementation that really works:
+
+```Scala
+val children = tracking {
+  counters.track map { counter =>
+    val upButton = document.createElement("button")
+    upButton.textContent = "Up"
+    upButton.addEventListener("click", { _ =>
+      counter.count() = counter.count.now + 1
+    })
+    
+    val countField = document.createElement("span") setting (
+      _.innerText = counter.count.track.toString
+    )
+    
+    val li = document.createElement("li")
+    li.appendChild(upButton)
+    li.appendChild(countField)
+    li
+  }
+}
+```
+
+You still need a naked `foreach` at the top level to hook everything into the DOM. But since you only need *one* `foreach` and it lives forever, there are no more resources to manage.
 
