@@ -12,6 +12,8 @@ lazy val cross = crossProject(JSPlatform, JVMPlatform).in(file(".")).
   settings(
     organization := "com.ellbur",
     name := "quicksignals",
+    description := "A minimal Scala 3 FRP library",
+    homepage := Some(url("https://github.com/ellbur/quicksignals")),
     version := "0.2.0",
     scalaVersion := "3.0.0-M3",
     scalaSource in Test := baseDirectory.value / "../test",
